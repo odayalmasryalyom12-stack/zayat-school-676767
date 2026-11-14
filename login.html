@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول | أنت أهم عندنا</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>أنت أهم عندنا</h1>
+    <p class="lead">سجّل دخولك، أو أنشئ حساباً جديداً.</p>
+
+    <div class="tabs">
+      <button type="button" id="tab-login" aria-selected="true">تسجيل الدخول</button>
+      <button type="button" id="tab-signup" aria-selected="false">إنشاء حساب</button>
+    </div>
+
+    <form id="form">
+      <input id="name" type="text" placeholder="الاسم" autocomplete="name" hidden>
+      <input id="email" type="text" placeholder="البريد الإلكتروني أو اسم المستخدم" autocomplete="username" required>
+      <input id="password" type="password" placeholder="كلمة المرور" autocomplete="current-password" required>
+      <button class="primary" id="submit">دخول</button>
+    </form>
+    <p class="msg" id="msg" role="alert"></p>
+
+    <div class="or">أو</div>
+    <button class="oauth" data-provider="Google"><span class="mark google" aria-hidden="true">G</span>المتابعة باستخدام Google</button>
+    <button class="oauth" data-provider="Facebook"><span class="mark facebook" aria-hidden="true">f</span>المتابعة باستخدام Facebook</button>
+
+    <button class="guest" id="guest">الدخول كضيف<small>تصفّح بدون حساب</small></button>
+
+    <p class="note">مشروع تجريبي: دخول Google وFacebook محاكاة، ولا تستخدم كلمة مرور حقيقية.</p>
+  </main>
+
+  <script src="auth.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    let mode = 'login';
+    const say = m => { $('msg').textContent = m || ''; };
+    const go = () => { location.href = 'dashboard.html'; };
+
+    function setMode(m) {
+      mode = m;
+      $('name').hidden = m === 'login';
+      $('submit').textContent = m === 'login' ? 'دخول' : 'إنشاء حساب';
+      $('password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+      $('email').type = m === 'login' ? 'text' : 'email';
+      $('email').placeholder = m === 'login' ? 'البريد الإلكتروني أو اسم المستخدم' : 'البريد الإلكتروني';
+      $('password').placeholder = m === 'login' ? 'كلمة المرور' : 'كلمة المرور (6 أحرف على الأقل)';
+      if (m === 'signup') $('password').minLength = 6; else $('password').removeAttribute('minlength');
+      $('tab-login').setAttribute('aria-selected', m === 'login');
+      $('tab-signup').setAttribute('aria-selected', m === 'signup');
+      say('');
+    }
+    $('tab-login').onclick = () => setMode('login');
+    $('tab-signup').onclick = () => setMode('signup');
+
+    $('form').onsubmit = e => {
+      e.preventDefault();
+      const err = mode === 'login'
+        ? signIn($('email').value, $('password').value)
+        : signUp($('name').value, $('email').value, $('password').value);
+      err ? say(err) : go();
+    };
+
+    document.querySelectorAll('.oauth').forEach(b => {
+      b.onclick = () => {
+        const email = prompt('(محاكاة) اكتب بريدك على ' + b.dataset.provider);
+        if (!email) return;
+        if (!email.includes('@')) return say('اكتب بريداً صحيحاً، مثل name@example.com');
+        const err = socialSignIn(b.dataset.provider, email);
+        err ? say(err) : go();
+      };
+    });
+
+    $('guest').onclick = () => { guestSignIn(); go(); };
+
+    const user = currentUser();
+    if (user && user.role !== 'guest') go();
+  </script>
+</body>
+</html>
